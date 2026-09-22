@@ -1,40 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Lock, 
-  KeyRound, 
+  LogOut, 
   Plus, 
   Trash2, 
   UploadCloud, 
-  Save, 
+  Image as ImageIcon, 
   Check, 
-  Image as ImageIcon,
-  ArrowRight,
-  Sliders,
+  FolderPlus, 
+  ShieldCheck, 
+  Home as HomeIcon,
+  Sparkles,
   Layers,
-  PhoneCall,
-  Eye
+  Sliders,
+  DollarSign
 } from 'lucide-react';
 
-// دالة لضغط الصور تلقائياً داخل المتصفح (حتى 10 ميجا إلى أقل من 300KB)
-const compressImageFile = (file) => {
-  return new Promise((resolve, reject) => {
+export default function Admin({ siteData, onSaveSiteData, onExitAdmin }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [authError, setAuthError] = useState(false);
+  const [activeTab, setActiveTab] = useState('projects');
+  const [saveAlert, setSaveAlert] = useState(false);
+
+  // حقول إضافة مشروع جديد
+  const [newProjTitle, setNewProjTitle] = useState('');
+  const [newProjCategory, setNewProjCategory] = useState(siteData.categories?.[1] || '');
+  const [newProjDesc, setNewProjDesc] = useState('');
+  const [newProjImage, setNewProjImage] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  // حقول بيانات الأمان
+  const [adminEmailInput, setAdminEmailInput] = useState(siteData.adminConfig?.adminEmail || 'admin@vanguard-atelier.com');
+  const [newPasscode, setNewPasscode] = useState('');
+
+  const fileInputRef = useRef(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  // التحقق من كلمة المرور
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const correctCode = siteData.adminConfig?.passcode || '1234';
+    if (passcodeInput === correctCode) {
+      setIsAuthenticated(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+    }
+  };
+
+  // معالجة وضغط الصور بصيغة WebP الحديثة (أقل من 300KB)
+  const processAndCompressImage = (file, callback) => {
+    if (!file) return;
+    setIsCompressing(true);
     const reader = new FileReader();
-    reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
         const maxDimension = 1600;
 
-        if (width > height && width > maxDimension) {
-          height = Math.round((height * maxDimension) / width);
-          width = maxDimension;
-        } else if (height > maxDimension) {
-          width = Math.round((width * maxDimension) / height);
-          height = maxDimension;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
         }
 
         canvas.width = width;
@@ -42,690 +77,314 @@ const compressImageFile = (file) => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // تصدير بجودة 82% عالية النقاء وحجم صغير جداً
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.82);
-        resolve(compressedBase64);
+        // تصدير الصورة بصيغة WebP عالية النقاء وبأصغر حجم
+        const webpDataUrl = canvas.toDataURL('image/webp', 0.82);
+        setIsCompressing(false);
+        callback(webpDataUrl);
       };
-      img.onerror = (err) => reject(err);
+      img.src = event.target.result;
     };
-    reader.onerror = (err) => reject(err);
-  });
-};
+    reader.readAsDataURL(file);
+  };
 
-export default function Admin({ siteData, onSaveSiteData, onExitAdmin }) {
-  const [data, setData] = useState(siteData);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [enteredPasscode, setEnteredPasscode] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [activeTab, setActiveTab] = useState('projects'); // tabs: projects, categories, hero, comparison, brand, security
-  const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      processAndCompressImage(file, (compressedUrl) => {
+        setNewProjImage(compressedUrl);
+      });
+    }
+  };
 
-  // حالات إضافة مشروع جديد
-  const [newProjTitle, setNewProjTitle] = useState('');
-  const [newProjCategory, setNewProjCategory] = useState(data.categories[1] || 'فلل وقصور');
-  const [newProjDesc, setNewProjDesc] = useState('');
-  const [newProjImage, setNewProjImage] = useState('');
-
-  // حالات إضافة قسم جديد
-  const [newCategoryName, setNewCategoryName] = useState('');
-
-  // حالات إضافة شريحة سلايدر جديدة
-  const [newSlideTitle, setNewSlideTitle] = useState('');
-  const [newSlideSubtitle, setNewSlideSubtitle] = useState('');
-  const [newSlideImage, setNewSlideImage] = useState('');
-
-  // التحقق من تسجيل الدخول
-  const handleLogin = (e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
-    if (enteredPasscode === (data.adminConfig?.passcode || '1234')) {
-      setIsAuthenticated(true);
-      setAuthError('');
-    } else {
-      setAuthError('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      processAndCompressImage(file, (compressedUrl) => {
+        setNewProjImage(compressedUrl);
+      });
     }
   };
 
-  // معالجة رفع وضغط الصور (Drop أو File Input من الاستوديو)
-  const processUploadedImage = async (file, targetSetter) => {
-    if (!file || !file.type.startsWith('image/')) {
-      alert('يرجى اختيار ملف صورة صالح.');
-      return;
-    }
-    try {
-      const compressedData = await compressImageFile(file);
-      targetSetter(compressedData);
-    } catch (error) {
-      alert('حدث خطأ أثناء معالجة وضغط الصورة.');
-    }
+  const notifySave = () => {
+    setSaveAlert(true);
+    setTimeout(() => setSaveAlert(false), 2500);
   };
 
-  // حفظ التعديلات في النظام
-  const triggerSave = (updatedData) => {
-    const finalData = updatedData || data;
-    setData(finalData);
-    onSaveSiteData(finalData);
-    setSaveSuccessNotice(true);
-    setTimeout(() => setSaveSuccessNotice(false), 2800);
-  };
+  // إضافة وحذف المشاريع
+  const handleAddProject = (e) => {
+    e.preventDefault();
+    if (!newProjTitle || !newProjImage) return;
 
-  // 1. إضافة وحذف المشاريع
-  const handleAddProject = () => {
-    if (!newProjTitle.trim() || !newProjImage) {
-      alert('يرجى كتابة اسم المشروع ورفع الصورة.');
-      return;
-    }
     const newProject = {
-      id: `proj-${Date.now()}`,
-      title: newProjTitle.trim(),
-      category: newProjCategory,
-      image: newProjImage,
-      description: newProjDesc.trim() || 'تشطيبات وتصميم فائق الفخامة والجودة.'
+      id: Date.now(),
+      title: newProjTitle,
+      category: newProjCategory || siteData.categories[0],
+      description: newProjDesc,
+      image: newProjImage
     };
-    const updated = { ...data, projects: [newProject, ...data.projects] };
+
+    const updated = {
+      ...siteData,
+      projects: [newProject, ...siteData.projects]
+    };
+
+    onSaveSiteData(updated);
     setNewProjTitle('');
     setNewProjDesc('');
     setNewProjImage('');
-    triggerSave(updated);
+    notifySave();
   };
 
   const handleDeleteProject = (id) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) return;
-    const updated = { ...data, projects: data.projects.filter(p => p.id !== id) };
-    triggerSave(updated);
-  };
-
-  // 2. إضافة وحذف الأقسام
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
-    if (data.categories.includes(newCategoryName.trim())) {
-      alert('هذا القسم موجود بالفعل.');
-      return;
-    }
-    const updated = { ...data, categories: [...data.categories, newCategoryName.trim()] };
-    setNewCategoryName('');
-    triggerSave(updated);
-  };
-
-  const handleDeleteCategory = (cat) => {
-    if (cat === 'الكل') {
-      alert('لا يمكن حذف القسم الافتراضي (الكل).');
-      return;
-    }
-    if (!window.confirm(`هل أنت متأكد من حذف قسم "${cat}"؟`)) return;
-    const updated = { ...data, categories: data.categories.filter(c => c !== cat) };
-    triggerSave(updated);
-  };
-
-  // 3. إضافة وحذف السلايدر
-  const handleAddSlide = () => {
-    if (!newSlideTitle.trim() || !newSlideImage) {
-      alert('يرجى تحديد عنوان وشريحة صورة للسلايدر.');
-      return;
-    }
-    const newSlide = {
-      id: `slide-${Date.now()}`,
-      title: newSlideTitle.trim(),
-      subtitle: newSlideSubtitle.trim(),
-      image: newSlideImage
+    const updated = {
+      ...siteData,
+      projects: siteData.projects.filter(p => p.id !== id)
     };
-    const updated = { ...data, heroSlides: [...data.heroSlides, newSlide] };
-    setNewSlideTitle('');
-    setNewSlideSubtitle('');
-    setNewSlideImage('');
-    triggerSave(updated);
+    onSaveSiteData(updated);
+    notifySave();
   };
 
-  const handleDeleteSlide = (id) => {
-    if (data.heroSlides.length <= 1) {
-      alert('يجب الإبقاء على شريحة واحدة على الأقل في السلايدر.');
-      return;
-    }
-    const updated = { ...data, heroSlides: data.heroSlides.filter(s => s.id !== id) };
-    triggerSave(updated);
+  // إضافة وحذف الأقسام
+  const handleAddCategory = () => {
+    if (!newCategoryName || siteData.categories.includes(newCategoryName)) return;
+    const updated = {
+      ...siteData,
+      categories: [...siteData.categories, newCategoryName]
+    };
+    onSaveSiteData(updated);
+    setNewCategoryName('');
+    notifySave();
+  };
+
+  const handleDeleteCategory = (catToDelete) => {
+    if (catToDelete === "الكل") return;
+    const updated = {
+      ...siteData,
+      categories: siteData.categories.filter(c => c !== catToDelete)
+    };
+    onSaveSiteData(updated);
+    notifySave();
+  };
+
+  // تحديث بيانات الأمان (البريد وكلمة المرور)
+  const handleUpdateSecurity = (e) => {
+    e.preventDefault();
+    const updated = {
+      ...siteData,
+      adminConfig: {
+        adminEmail: adminEmailInput,
+        passcode: newPasscode.trim() ? newPasscode : siteData.adminConfig.passcode
+      }
+    };
+    onSaveSiteData(updated);
+    setNewPasscode('');
+    notifySave();
   };
 
   // شاشة تسجيل الدخول المعزولة
   if (!isAuthenticated) {
     return (
       <div className="admin-login-screen">
-        <div className="admin-login-box">
-          <div className="admin-lock-icon">
+        <div className="admin-login-card">
+          <div className="login-icon-box">
             <Lock size={32} color="#c5a059" />
           </div>
-          <h2 className="admin-login-title">بوابة الإدارة المركزية</h2>
-          <p className="admin-login-sub">منصة VANGUARD ATELIER الخاصة بالإدارة والتحكم</p>
-
-          <form onSubmit={handleLogin} className="admin-login-form">
-            <div className="form-group">
-              <label>رمز الدخول السري</label>
-              <input
-                type="password"
-                placeholder="أدخل رمز الدخول..."
-                value={enteredPasscode}
-                onChange={(e) => setEnteredPasscode(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            {authError && <div className="admin-error-text">{authError}</div>}
-
-            <button type="submit" className="btn-gold-wide">
-              <KeyRound size={18} />
-              دخول للوحة التحكم
-            </button>
+          <h2>لوحة تحكم VANGUARD المعزولة</h2>
+          <p>بوابة إدارة المحتوى المعماري والوسائط</p>
+          <form onSubmit={handleLogin} className="login-form">
+            <input 
+              type="password" 
+              placeholder="أدخل الرمز السري" 
+              value={passcodeInput}
+              onChange={(e) => setPasscodeInput(e.target.value)}
+              className="admin-input text-center"
+              autoFocus
+            />
+            {authError && <span className="auth-err-msg">الرمز السري غير صحيح، حاول ثانية.</span>}
+            <button type="submit" className="btn-gold full-width">تسجيل الدخول</button>
+            <button type="button" onClick={onExitAdmin} className="btn-outline full-width">العودة للموقع</button>
           </form>
-
-          <button onClick={onExitAdmin} className="admin-back-site-btn">
-            <ArrowRight size={16} /> العودة للواجهة الرئيسية
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-dashboard-wrapper">
-      {/* الشريط العلوي للوحة الإدارة */}
-      <header className="admin-top-bar">
-        <div className="admin-bar-info">
-          <h2>لوحة الإدارة المركزية</h2>
-          <span>{data.brand.name}</span>
+    <div className="admin-dashboard">
+      {/* هيدر اللوحة */}
+      <header className="admin-nav-bar">
+        <div className="admin-nav-titles">
+          <h3>VANGUARD ATELIER</h3>
+          <span>نظام الإدارة المعماري المركزي</span>
         </div>
-        <div className="admin-top-actions">
-          {saveSuccessNotice && (
-            <span className="save-badge-notice">
-              <Check size={16} /> تم الحفظ بنجاح
-            </span>
-          )}
-          <button onClick={onExitAdmin} className="btn-outline-gold">
-            <Eye size={16} /> استعراض الموقع
-          </button>
+        <div className="admin-nav-actions">
+          <button onClick={onExitAdmin} className="btn-outline-sm"><HomeIcon size={16} /> معاينة الواجهة</button>
+          <button onClick={() => setIsAuthenticated(false)} className="btn-danger-sm"><LogOut size={16} /> خروج</button>
         </div>
       </header>
 
-      {/* شريط تبويبات الأقسام */}
-      <nav className="admin-tabs-nav">
-        <button className={`admin-tab-btn ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
-          المشاريع والكتالوج
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}>
-          الأقسام والتصنيفات
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'hero' ? 'active' : ''}`} onClick={() => setActiveTab('hero')}>
-          سلايدر الواجهة
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'comparison' ? 'active' : ''}`} onClick={() => setActiveTab('comparison')}>
-          مقارنة 3D والواقع
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'brand' ? 'active' : ''}`} onClick={() => setActiveTab('brand')}>
-          بيانات الشركة والتواصل
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
-          الأمان وكلمة المرور
-        </button>
-      </nav>
+      {/* تنبيه الحفظ التلقائي */}
+      {saveAlert && (
+        <div className="floating-save-alert">
+          <Check size={18} /> تم حفظ وتحديث البيانات بنجاح!
+        </div>
+      )}
 
-      {/* محتوى التبويبات */}
-      <main className="admin-main-container">
+      {/* تبويبات لوحة التحكم */}
+      <div className="admin-tabs-bar">
+        <button className={`admin-tab ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
+          <Layers size={16} /> المشاريع والأقسام
+        </button>
+        <button className={`admin-tab ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
+          <ShieldCheck size={16} /> الأمان والبريد
+        </button>
+      </div>
 
-        {/* 1. تبويب المشاريع */}
+      <main className="admin-content-area">
+        {/* تبويب المشاريع */}
         {activeTab === 'projects' && (
-          <div className="admin-panel-card">
-            <h3>إضافة مشروع جديد للكتالوج التفاعلي</h3>
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label>اسم المشروع</label>
+          <div className="admin-grid-layout">
+            {/* نموذج إضافة مشروع */}
+            <div className="admin-box">
+              <h4><Plus size={18} /> إضافة عمل استثنائي جديد</h4>
+              <form onSubmit={handleAddProject} className="admin-form-stack">
                 <input 
                   type="text" 
-                  placeholder="مثال: فيلا سكنية - التجمع الخامس" 
-                  value={newProjTitle} 
-                  onChange={(e) => setNewProjTitle(e.target.value)} 
+                  placeholder="اسم المشروع (مثال: قصر ويست تاون)" 
+                  value={newProjTitle}
+                  onChange={(e) => setNewProjTitle(e.target.value)}
+                  className="admin-input"
+                  required
                 />
-              </div>
-
-              <div className="form-group">
-                <label>القسم / التصنيف</label>
-                <select value={newProjCategory} onChange={(e) => setNewProjCategory(e.target.value)}>
-                  {data.categories.filter(c => c !== 'الكل').map(cat => (
+                
+                <select 
+                  value={newProjCategory} 
+                  onChange={(e) => setNewProjCategory(e.target.value)}
+                  className="admin-input"
+                >
+                  {siteData.categories.filter(c => c !== 'الكل').map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-              </div>
 
-              <div className="form-group full-width">
-                <label>وصف مختصر للمشروع</label>
-                <input 
-                  type="text" 
-                  placeholder="تفاصيل التشطيب والمساحة ونمط التصميم..." 
-                  value={newProjDesc} 
-                  onChange={(e) => setNewProjDesc(e.target.value)} 
+                <textarea 
+                  placeholder="وصف تفصيلي للخامات والتشطيب..." 
+                  value={newProjDesc}
+                  onChange={(e) => setNewProjDesc(e.target.value)}
+                  className="admin-input"
+                  rows={3}
                 />
-              </div>
 
-              {/* منطقة سحب وإفلات للكمبيوتر واختيار المعرض حصراً للموبايل */}
-              <div className="form-group full-width">
-                <label>صورة المشروع (سحب وإفلات أو اختيار من الاستوديو)</label>
+                {/* منطقة رفع وضغط الصور بنظام WebP */}
                 <div 
-                  className="upload-dropzone"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      processUploadedImage(e.dataTransfer.files[0], setNewProjImage);
-                    }
-                  }}
+                  className="upload-dropzone" 
+                  onDragOver={(e) => e.preventDefault()} 
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current.click()}
                 >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileSelect} 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                  />
                   {newProjImage ? (
-                    <div className="preview-wrap">
-                      <img src={newProjImage} alt="Preview" className="preview-thumb" />
-                      <button className="btn-small-danger" onClick={() => setNewProjImage('')}>حذف الصورة</button>
+                    <div className="uploaded-preview">
+                      <img src={newProjImage} alt="Preview" />
+                      <span className="replace-tag">انقر لتبديل الصورة (تم تحويلها لـ WebP)</span>
                     </div>
                   ) : (
-                    <div className="dropzone-prompt">
+                    <div className="dropzone-guide">
                       <UploadCloud size={32} color="#c5a059" />
                       <p>اسحب الصورة وأفلتها هنا (للكمبيوتر)</p>
-                      <label className="btn-upload-label">
-                        اختيار من استوديو الموبايل
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              processUploadedImage(e.target.files[0], setNewProjImage);
-                            }
-                          }}
-                        />
-                      </label>
-                      <span className="compression-note">يتم ضغط الصورة تلقائياً لتوفير باقة الهاتف وسرعة التصفح</span>
+                      <span className="btn-gold-sm">أو اختر من الاستوديو (للموبايل)</span>
                     </div>
                   )}
+                  {isCompressing && <span className="compressing-tag">جاري الضغط الذكي بصيغة WebP...</span>}
                 </div>
-              </div>
 
-              <div className="form-group full-width">
-                <button className="btn-gold-wide" onClick={handleAddProject}>
-                  <Plus size={18} /> إضافة المشروع للكتالوج فوراً
+                <button type="submit" className="btn-gold" disabled={!newProjImage || isCompressing}>
+                  نشر المشروع فوراً
                 </button>
+              </form>
+            </div>
+
+            {/* إدارة الأقسام والكتالوج */}
+            <div className="admin-box">
+              <h4><FolderPlus size={18} /> إدارة أقسام الكتالوج</h4>
+              <div className="add-cat-inline">
+                <input 
+                  type="text" 
+                  placeholder="اسم القسم الجديد..." 
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="admin-input"
+                />
+                <button onClick={handleAddCategory} className="btn-gold-sm">إضافة</button>
               </div>
-            </div>
 
-            <hr className="admin-divider" />
+              <div className="cat-tags-list">
+                {siteData.categories.map(cat => (
+                  <span key={cat} className="cat-manage-pill">
+                    {cat}
+                    {cat !== "الكل" && (
+                      <button onClick={() => handleDeleteCategory(cat)} title="حذف القسم">✕</button>
+                    )}
+                  </span>
+                ))}
+              </div>
 
-            <h3>المشاريع المعروضة حالياً ({data.projects.length})</h3>
-            <div className="admin-items-list">
-              {data.projects.map((proj) => (
-                <div key={proj.id} className="admin-item-row">
-                  <img src={proj.image} alt={proj.title} className="item-mini-img" />
-                  <div className="item-meta">
-                    <h4>{proj.title}</h4>
-                    <span className="item-category-tag">{proj.category}</span>
-                    <p>{proj.description}</p>
-                  </div>
-                  <button className="btn-delete" onClick={() => handleDeleteProject(proj.id)} title="حذف المشروع">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+              <hr className="admin-divider" />
 
-        {/* 2. تبويب الأقسام والتصنيفات */}
-        {activeTab === 'categories' && (
-          <div className="admin-panel-card">
-            <h3>إدارة وتخصيص أقسام وفلاتر الكتالوج</h3>
-            <div className="add-category-row">
-              <input 
-                type="text" 
-                placeholder="اسم القسم الجديد (مثال: قصور ملكية، لاندسكيب، مكاتب)..." 
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-              />
-              <button className="btn-gold" onClick={handleAddCategory}>
-                <Plus size={18} /> إضافة القسم
-              </button>
-            </div>
-
-            <div className="categories-chips-grid">
-              {data.categories.map((cat) => (
-                <div key={cat} className="category-admin-chip">
-                  <span>{cat}</span>
-                  {cat !== 'الكل' && (
-                    <button onClick={() => handleDeleteCategory(cat)} className="chip-del-btn" title="حذف هذا القسم">
-                      ✕
+              <h4>قائمة المشاريع الحالية ({siteData.projects.length})</h4>
+              <div className="projects-admin-scroll">
+                {siteData.projects.map(proj => (
+                  <div key={proj.id} className="project-manage-item">
+                    <img src={proj.image} alt={proj.title} />
+                    <div className="proj-info">
+                      <strong>{proj.title}</strong>
+                      <small>{proj.category}</small>
+                    </div>
+                    <button onClick={() => handleDeleteProject(proj.id)} className="btn-del" title="حذف المشروع">
+                      <Trash2 size={16} />
                     </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 3. تبويب سلايدر الواجهة */}
-        {activeTab === 'hero' && (
-          <div className="admin-panel-card">
-            <h3>إدارة شرائح البانر الرئيسي العريض (Hero Slider)</h3>
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label>عنوان الشريحة</label>
-                <input 
-                  type="text" 
-                  placeholder="مثال: تصاميم عصرية استثنائية" 
-                  value={newSlideTitle} 
-                  onChange={(e) => setNewSlideTitle(e.target.value)} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>الوصف الفرعي</label>
-                <input 
-                  type="text" 
-                  placeholder="مثال: تناغم هندسي يجسد الفخامة..." 
-                  value={newSlideSubtitle} 
-                  onChange={(e) => setNewSlideSubtitle(e.target.value)} 
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>صورة السلايدر العريضة</label>
-                <div className="upload-dropzone">
-                  {newSlideImage ? (
-                    <div className="preview-wrap">
-                      <img src={newSlideImage} alt="Preview" className="preview-thumb" />
-                      <button className="btn-small-danger" onClick={() => setNewSlideImage('')}>حذف الصورة</button>
-                    </div>
-                  ) : (
-                    <div className="dropzone-prompt">
-                      <UploadCloud size={30} color="#c5a059" />
-                      <label className="btn-upload-label">
-                        رفع صورة السلايدر (من الاستوديو أو الكمبيوتر)
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              processUploadedImage(e.target.files[0], setNewSlideImage);
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-group full-width">
-                <button className="btn-gold-wide" onClick={handleAddSlide}>
-                  <Plus size={18} /> إضافة الشريحة للسلايدر
-                </button>
-              </div>
-            </div>
-
-            <hr className="admin-divider" />
-
-            <div className="admin-items-list">
-              {data.heroSlides.map((slide) => (
-                <div key={slide.id} className="admin-item-row">
-                  <img src={slide.image} alt={slide.title} className="item-mini-img wide" />
-                  <div className="item-meta">
-                    <h4>{slide.title}</h4>
-                    <p>{slide.subtitle}</p>
                   </div>
-                  <button className="btn-delete" onClick={() => handleDeleteSlide(slide.id)} title="حذف الشريحة">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 4. تبويب مقارنة 3D والواقع */}
-        {activeTab === 'comparison' && (
-          <div className="admin-panel-card">
-            <h3>تعديل صور وبيانات المقارنة الواقعية (3D vs Reality)</h3>
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label>عنوان القسم</label>
-                <input 
-                  type="text" 
-                  value={data.comparison.title} 
-                  onChange={(e) => setData({ ...data, comparison: { ...data.comparison, title: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>الوصف التوضيحي</label>
-                <input 
-                  type="text" 
-                  value={data.comparison.description} 
-                  onChange={(e) => setData({ ...data, comparison: { ...data.comparison, description: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>صورة التصميم 3D (الريندر)</label>
-                <div className="upload-dropzone compact">
-                  <img src={data.comparison.renderImage} alt="Render" className="preview-thumb" />
-                  <label className="btn-upload-label mt-2">
-                    تغيير صورة 3D
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          processUploadedImage(e.target.files[0], (img) => {
-                            const updated = { ...data, comparison: { ...data.comparison, renderImage: img } };
-                            triggerSave(updated);
-                          });
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>صورة الواقع الفعلي (بعد التنفيذ)</label>
-                <div className="upload-dropzone compact">
-                  <img src={data.comparison.realImage} alt="Real" className="preview-thumb" />
-                  <label className="btn-upload-label mt-2">
-                    تغيير صورة الواقع
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          processUploadedImage(e.target.files[0], (img) => {
-                            const updated = { ...data, comparison: { ...data.comparison, realImage: img } };
-                            triggerSave(updated);
-                          });
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-group full-width">
-                <button className="btn-gold" onClick={() => triggerSave(data)}>
-                  <Save size={18} /> حفظ نصوص المقارنة
-                </button>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* 5. تبويب بيانات الشركة والتواصل */}
-        {activeTab === 'brand' && (
-          <div className="admin-panel-card">
-            <h3>تعديل هوية ونصوص وروابط التواصل</h3>
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label>اسم الشركة المعماري</label>
-                <input 
-                  type="text" 
-                  value={data.brand.name} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, name: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>الوصف الفرعي باللاتينية</label>
-                <input 
-                  type="text" 
-                  value={data.brand.subtitle} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, subtitle: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>الشعار اللفظي (Tagline)</label>
-                <input 
-                  type="text" 
-                  value={data.brand.tagline} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, tagline: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>نص نبذة "من نحن" وفلسفة العمل</label>
-                <textarea 
-                  rows={4}
-                  value={data.brand.aboutText} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, aboutText: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>سنوات الخبرة (مثال: 15+)</label>
-                <input 
-                  type="text" 
-                  value={data.brand.yearsExperience} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, yearsExperience: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>المشاريع المكتملة (مثال: 240+)</label>
-                <input 
-                  type="text" 
-                  value={data.brand.completedProjects} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, completedProjects: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>العملاء الراضون (مثال: 180+)</label>
-                <input 
-                  type="text" 
-                  value={data.brand.satisfiedClients} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, satisfiedClients: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>رقم الهاتف للاتصال المباشر</label>
-                <input 
-                  type="text" 
-                  value={data.brand.phone} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, phone: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>رقم الواتساب (بالكود الدولي مثل 2010...)</label>
-                <input 
-                  type="text" 
-                  value={data.brand.whatsapp} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, whatsapp: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>البريد الإلكتروني للشركة</label>
-                <input 
-                  type="email" 
-                  value={data.brand.email} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, email: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <label>العنوان والمقر</label>
-                <input 
-                  type="text" 
-                  value={data.brand.address} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, address: e.target.value } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>رابط صفحة فيسبوك</label>
-                <input 
-                  type="text" 
-                  value={data.brand.socials.facebook} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, socials: { ...data.brand.socials, facebook: e.target.value } } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>رابط حساب إنستغرام</label>
-                <input 
-                  type="text" 
-                  value={data.brand.socials.instagram} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, socials: { ...data.brand.socials, instagram: e.target.value } } })} 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>رابط قناة / حساب تليجرام</label>
-                <input 
-                  type="text" 
-                  value={data.brand.socials.telegram} 
-                  onChange={(e) => setData({ ...data, brand: { ...data.brand, socials: { ...data.brand.socials, telegram: e.target.value } } })} 
-                />
-              </div>
-
-              <div className="form-group full-width">
-                <button className="btn-gold-wide" onClick={() => triggerSave(data)}>
-                  <Save size={18} /> حفظ بيانات وهوية الشركة بالكامل
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 6. تبويب الأمان وكلمة المرور */}
+        {/* تبويب الأمان والبريد */}
         {activeTab === 'security' && (
-          <div className="admin-panel-card">
-            <h3>إعدادات الأمان وتغيير كلمة المرور</h3>
-            <div className="admin-form-grid" style={{ maxWidth: '480px' }}>
-              <div className="form-group full-width">
-                <label>كلمة المرور الجديدة للوحة التحكم</label>
-                <input 
-                  type="text" 
-                  placeholder="اكتب الرمز الجديد هنا..." 
-                  value={data.adminConfig?.passcode || ''} 
-                  onChange={(e) => setData({ ...data, adminConfig: { ...data.adminConfig, passcode: e.target.value } })} 
-                />
-              </div>
+          <div className="admin-box max-w-md">
+            <h4><ShieldCheck size={18} /> بيانات الحساب والأمان</h4>
+            <form onSubmit={handleUpdateSecurity} className="admin-form-stack">
+              <label>بريد الأدمن الرسمي:</label>
+              <input 
+                type="email" 
+                value={adminEmailInput}
+                onChange={(e) => setAdminEmailInput(e.target.value)}
+                className="admin-input"
+                required
+              />
 
-              <div className="form-group full-width">
-                <button className="btn-gold-wide" onClick={() => triggerSave(data)}>
-                  <Save size={18} /> تحديث كلمة المرور وحفظها
-                </button>
-              </div>
-            </div>
+              <label>تغيير كلمة المرور (الرمز السري):</label>
+              <input 
+                type="password" 
+                placeholder="أدخل كلمة مرور جديدة (اتركها فارغة إن لم ترغب بالتغيير)" 
+                value={newPasscode}
+                onChange={(e) => setNewPasscode(e.target.value)}
+                className="admin-input"
+              />
+
+              <button type="submit" className="btn-gold">حفظ التغييرات</button>
+            </form>
           </div>
         )}
-
       </main>
     </div>
   );
 }
-
