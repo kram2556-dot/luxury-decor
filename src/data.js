@@ -20,7 +20,6 @@ export const initialSiteData = {
     }
   },
 
-  // باقات التشطيب المعتمدة لحاسبة التكلفة التفاعلية
   calculatorPackages: [
     {
       id: "classic",
@@ -42,7 +41,6 @@ export const initialSiteData = {
     }
   ],
 
-  // كتالوج الخامات الفاخر (Materials Lookbook)
   materialsLookbook: [
     {
       id: 1,
