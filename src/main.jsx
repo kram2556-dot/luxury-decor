@@ -1,42 +1,548 @@
-import React, { useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { ArrowUpLeft, ArrowUpRight, Menu, MessageCircle, MoveUpRight, ShieldCheck, Sparkles, UploadCloud, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom/client';
+import { 
+  Phone, 
+  MessageCircle, 
+  ChevronRight, 
+  ChevronLeft, 
+  Layers, 
+  Award, 
+  Users, 
+  Building, 
+  Settings, 
+  X, 
+  Check, 
+  ExternalLink,
+  Sliders,
+  Plus,
+  Trash2,
+  Lock
+} from 'lucide-react';
+import { initialSiteData } from './data';
 import './styles.css';
 
-const copy = {
-  ar: { nav:['المشاريع','الخامات','الإرث','المنهجية','حاسبة التكلفة'], eyebrow:'من الفكرة إلى المفتاح', heroTitle:<>مساحات تُروى<br/><em>ولا تُنسى.</em></>, heroBody:'نصمم وننفذ عوالم معمارية متكاملة تعكس ذوقك، وتُبنى لتدوم.', start:'ابدأ مشروعك', view:'استكشف أعمالنا', statement:'نحن لا نزيّن المساحات. نحن نمنحها هوية.', services:'منظومة النخبة', servicesSub:'كل تفصيلة محسوبة. كل لحظة مقصودة.', portfolio:'أعمال مختارة', portfolioSub:'مشاريع صُممت لتعيش خارج الزمن.', materials:'مختارات الخامة', materialsSub:'الملمس هو أول ما يلمس الذاكرة.', about:'عن الاستوديو والإرث', aboutSub:'إرث يُبنى بهدوء، ويُرى في كل تفصيلة.', method:'رحلة المشروع', methodSub:'مسار واضح، من أول خط إلى آخر لمسة.', calculator:'تقدير استثمارك', calculatorSub:'ابدأ برقم تقريبي، ثم دعنا نبني التفاصيل معًا.', area:'المساحة بالمتر المربع', tier:'مستوى التشطيب', estimate:'التقدير يبدأ من', whatsapp:'احصل على عرض مخصص', footer:'نحوّل الطموح المعماري إلى إرث بصري.', admin:'لوحة الإدارة'},
-  en: { nav:['Projects','Materials','Heritage','Methodology','Estimator'], eyebrow:'From concept to key', heroTitle:<>Spaces that are<br/><em>never forgotten.</em></>, heroBody:'We design and deliver complete architectural worlds that reflect your taste and are built to endure.', start:'Start a project', view:'Explore our work', statement:'We do not decorate spaces. We give them a point of view.', services:'The Atelier', servicesSub:'Every detail considered. Every moment intentional.', portfolio:'Selected work', portfolioSub:'Projects designed to live beyond time.', materials:'The material edit', materialsSub:'Texture is the first thing memory touches.', about:'About studio & heritage', aboutSub:'A quiet legacy, visible in every detail.', method:'The project journey', methodSub:'A clear path, from first line to final touch.', calculator:'Your investment', calculatorSub:'Start with a guide, then let’s build the detail together.', area:'Area in square metres', tier:'Finishing tier', estimate:'Estimation from', whatsapp:'Request a tailored quote', footer:'Turning architectural ambition into visual legacy.', admin:'Admin panel'}
-};
-const initialProjects=[
- {title:'فيلا السرو',en:'Cypress House',category:'Residential',arCat:'سكني',location:'الرياض · 2024',image:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85',number:'01'},
- {title:'جناح نوفا',en:'Nova Suite',category:'Commercial',arCat:'تجاري',location:'دبي · 2023',image:'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85',number:'02'},
- {title:'مكتب أثير',en:'Athir Offices',category:'Administrative',arCat:'إداري',location:'الدوحة · 2024',image:'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=85',number:'03'}
-];
-const initialMaterials=[
- {name:'رخام Calacatta Viola',en:'Calacatta Viola Marble',type:'Stone / حجر',image:'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=85'},
- {name:'نحاس معتّق',en:'Brushed Brass',type:'Metal / معدن',image:'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=900&q=85'},
- {name:'خشب جوز طبيعي',en:'Engineered Walnut',type:'Wood / خشب',image:'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=85&sat=-30'},
- {name:'إضاءة محيطية ذكية',en:'Ambient Smart Light',type:'Light / إضاءة',image:'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=85'}
-];
-const initialAbout={foundingYear:'2012',projects:'120+',experience:'15+',delivery:'98%',storyAr:'تأسسنا من إيمان بسيط: أن العمارة لا تُبنى بالحجر وحده، بل بالذاكرة والضوء وما نتركه خلفنا. منذ أول مشروع، جمعنا بين دقة المكتب المعماري وحسّ الأتيليه الحرفي لنصنع مساحات لها حضورها الخاص.',storyEn:'We began with a simple belief: architecture is not built from stone alone, but from memory, light and what we leave behind. Since our first commission, we have paired the precision of an architecture practice with the sensibility of a craft atelier.',ethosAr:'نؤمن أن كل مشروع يجب أن يكون أصيلاً، هادئاً، ومصمماً ليصبح جزءاً من حياة من يسكنه.',ethosEn:'Every project should feel original, quiet and made to become part of the life it holds.',architectAr:'مريم الرفاعي — الشريك المؤسس والمدير الإبداعي',architectEn:'Mariam Al-Rifai — Founding Partner & Creative Director'};
+// Hook لإدارة البيانات وتخزينها محلياً
+function useSiteData() {
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('vanguard_site_data');
+    return saved ? JSON.parse(saved) : initialSiteData;
+  });
 
-function compressImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const max=1800, scale=Math.min(1,max/img.width), canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/webp',.82));};img.onerror=reject;img.src=reader.result};reader.onerror=reject;reader.readAsDataURL(file)})}
-function Dropzone({value,onChange,label,ar}){const [drag,setDrag]=useState(false);const input=useRef(null);const handle=async file=>{if(!file||!file.type.startsWith('image/'))return;onChange(await compressImage(file))};return <div className={'dropzone '+(drag?'dragging':'')} onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);handle(e.dataTransfer.files?.[0])}} onClick={()=>input.current?.click()}>{value?<img src={value} alt="uploaded preview"/>:<><UploadCloud size={22}/><strong>{label}</strong><small>{ar?'اسحب الصورة هنا أو اضغط للاختيار · WebP مضغوط':'Drop image here or tap to choose · compressed WebP'}</small></>}<input ref={input} type="file" accept="image/*" capture="environment" onChange={e=>handle(e.target.files?.[0])}/></div>}
+  const updateData = (newData) => {
+    setData(newData);
+    localStorage.setItem('vanguard_site_data', JSON.stringify(newData));
+  };
 
-function App(){
- const [lang,setLang]=useState('ar'),t=copy[lang],isAr=lang==='ar';const [menu,setMenu]=useState(false),[activeCat,setActiveCat]=useState('All'),[area,setArea]=useState(220),[tier,setTier]=useState('ultra'),[admin,setAdmin]=useState(false),[toast,setToast]=useState('');const [projects,setProjects]=useState(initialProjects),[materialList,setMaterialList]=useState(initialMaterials),[brandLogo,setBrandLogo]=useState(''),[about,setAbout]=useState(initialAbout);
- const tiers={classic:{label:'Classic Luxury',price:4800},ultra:{label:'Ultra Luxury',price:7200},royal:{label:'Royal Bespoke',price:11500}};const total=area*tiers[tier].price,filtered=activeCat==='All'?projects:projects.filter(p=>p.category===activeCat),money=new Intl.NumberFormat(isAr?'ar-SA':'en-US').format(total);const go=id=>{document.getElementById(id)?.scrollIntoView({behavior:'smooth'});setMenu(false)};const notify=msg=>{setToast(msg);setTimeout(()=>setToast(''),2800)};const wa=`https://wa.me/966500000000?text=${encodeURIComponent(isAr?`مرحباً، أود طلب عرض لمشروع بمساحة ${area} م² بمستوى ${tiers[tier].label}.`:`Hello, I’d like a quote for a ${area} sqm project at ${tiers[tier].label} level.`)}`;
- return <div className={isAr?'app rtl':'app'}><header className="topbar"><a className="brand" href="#top">{brandLogo?<img className="brand-logo" src={brandLogo} alt="brand logo"/>:<span className="brand-mark">L</span>}<span>L’ÉLITE <b>ATELIER</b><small>نُخبة للتصميم والتنفيذ</small></span></a><nav className={menu?'open':''}>{t.nav.map((n,i)=><button key={n} onClick={()=>go(['projects','materials','about','method','calculator'][i])}>{n}</button>)}<button onClick={()=>setAdmin(true)} className="admin-link">{t.admin} ↗</button></nav><div className="top-actions"><button className="lang" onClick={()=>setLang(isAr?'en':'ar')}>{isAr?'EN':'عربي'}</button><button className="menu-btn" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button></div></header>
- <main id="top"><section className="hero"><div className="hero-copy"><p className="kicker"><span/> {t.eyebrow}</p><h1>{t.heroTitle}</h1><p className="hero-body">{t.heroBody}</p><div className="hero-cta"><button className="gold-btn" onClick={()=>go('calculator')}>{t.start}<MoveUpRight size={16}/></button><button className="text-btn" onClick={()=>go('projects')}>{t.view}<ArrowUpLeft size={16}/></button></div></div><div className="hero-visual"><div className="hero-image"/><div className="hero-caption"><span>01 / 03</span><span>Private residence · Riyadh</span></div><div className="circle-stamp"><span>SCROLL TO<br/>DISCOVER</span><ArrowUpLeft size={18}/></div></div><div className="hero-vertical">L’ÉLITE ATELIER · EST. {about.foundingYear}</div></section>
- <section className="statement"><div className="section-no">01 <span>—</span> 04</div><h2>“{t.statement}”</h2><p>We approach every commission as a total work of art — where architecture, interior and atmosphere move as one.</p></section>
- <section className="services section-pad"><div className="section-heading"><div><p className="kicker"><span/> 02 / 04</p><h2>{t.services}</h2></div><p>{t.servicesSub}</p></div><div className="service-grid"><Service icon="◈" title={isAr?'الاستشارة المعمارية':'Architectural consultancy'} text={isAr?'رؤية متكاملة تبدأ من قراءة المكان وتنتهي بهوية واضحة.':'A complete vision that begins with reading the place and ends with a clear identity.'}/><Service icon="⌑" title={isAr?'التصميم الداخلي':'Interior design'} text={isAr?'تكوينات حسية تجمع بين الضوء، النسب، والخامة.':'Sensory compositions that bring together light, proportion and material.'}/><Service icon="✦" title={isAr?'التنفيذ والتسليم':'Turnkey delivery'} text={isAr?'حرفة دقيقة، وإدارة صارمة، وتسليم يليق بالرؤية.':'Precise craft, rigorous management and delivery worthy of the vision.'}/></div></section>
- <section id="projects" className="portfolio section-pad"><div className="section-heading"><div><p className="kicker"><span/> 03 / 04</p><h2>{t.portfolio}</h2></div><p>{t.portfolioSub}</p></div><div className="filters">{['All','Residential','Commercial','Administrative'].map(c=><button className={activeCat===c?'active':''} key={c} onClick={()=>setActiveCat(c)}>{isAr?(c==='All'?'الكل':c==='Residential'?'سكني':c==='Commercial'?'تجاري':'إداري'):c}</button>)}</div><div className="project-grid">{filtered.map(p=><article className="project-card" key={p.number}><div className="project-image" style={{backgroundImage:`url(${p.image})`}}><span className="project-number">{p.number}</span><button className="round-arrow"><ArrowUpLeft size={20}/></button></div><div className="project-meta"><div><h3>{isAr?p.title:p.en}</h3><p>{isAr?p.arCat:p.category} · {p.location}</p></div><span>↗</span></div></article>)}</div></section>
- <section id="materials" className="materials section-pad"><div className="section-heading"><div><p className="kicker"><span/> 04 / 04</p><h2>{t.materials}</h2></div><p>{t.materialsSub}</p></div><div className="material-grid">{materialList.map((m,i)=><div className="material-card" key={m.name}><div className="material-image" style={{backgroundImage:`url(${m.image})`}}/><div className="material-copy"><span>0{i+1}</span><h3>{isAr?m.name:m.en}</h3><p>{m.type}</p></div></div>)}</div></section>
- <section id="about" className="heritage section-pad"><div className="heritage-copy"><p className="kicker"><span/> 05 / 05</p><h2>{t.about}</h2><p className="heritage-lead">{isAr?about.storyAr:about.storyEn}</p><p className="heritage-ethos">“{isAr?about.ethosAr:about.ethosEn}”</p><p className="signature">{isAr?about.architectAr:about.architectEn}</p></div><div className="heritage-stats"><Stat value={about.foundingYear} label={isAr?'عام التأسيس':'Year established'}/><Stat value={about.projects} label={isAr?'مشروعاً منجزاً':'Completed projects'}/><Stat value={about.experience} label={isAr?'سنوات خبرة مجمعة':'Years combined experience'}/><Stat value={about.delivery} label={isAr?'تسليم على الموعد':'On-time turnkey delivery'}/></div></section>
- <section id="method" className="timeline section-pad"><div className="section-heading"><div><p className="kicker"><span/> 06 / 06</p><h2>{t.method}</h2></div><p>{t.methodSub}</p></div><div className="steps">{(isAr?['الرؤية والموجز','التصميم التخطيطي','تطوير التفاصيل','التنفيذ والإشراف','التسليم الكامل']:['Vision & brief','Schematic design','Detail development','Build & oversee','Turnkey handover']).map((x,i)=><div className="step" key={x}><div className="step-top"><span>0{i+1}</span><span className="step-line"/></div><h3>{x}</h3><p>{isAr?['نبدأ بالاستماع، ثم نرسم الإطار الذي سيحكم كل قرار.','نحوّل الرؤية إلى لغة معمارية قابلة للتنفيذ.','كل وصلة، كل خامة، وكل مصدر ضوء له سبب.','فريق واحد يدير الجودة والوقت والمشهد النهائي.','مساحتك جاهزة لتعيش فيها، لا لتكتمل فقط.'][i]:['We listen first, then define the frame for every decision.','We translate the vision into an executable architectural language.','Every joint, material and light source has a reason.','One team managing quality, timing and the final scene.','A space ready to be lived in, not simply completed.'][i]}</p></div>)}</div></section>
- <section id="calculator" className="calculator section-pad"><div className="calc-intro"><p className="kicker"><span/> YOUR NEXT CHAPTER</p><h2>{t.calculator}</h2><p>{t.calculatorSub}</p><div className="trust"><ShieldCheck size={18}/><span>{isAr?'تقدير أولي خاص وسري 100%':'Private and 100% confidential first estimate'}</span></div></div><div className="calc-box"><label>{t.area}<strong>{area} m²</strong></label><input type="range" min="50" max="1200" step="10" value={area} onChange={e=>setArea(e.target.value)}/><div className="range-labels"><span>50 m²</span><span>1,200 m²</span></div><label className="tier-label">{t.tier}</label><div className="tier-options">{Object.entries(tiers).map(([k,v])=><button className={tier===k?'selected':''} key={k} onClick={()=>setTier(k)}><span>{v.label}</span><small>{v.price.toLocaleString()} SAR / m²</small></button>)}</div><div className="calc-result"><span>{t.estimate}</span><strong>{money} <small>SAR</small></strong></div><a className="gold-btn full" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={18}/>{t.whatsapp}</a></div></section></main>
- <footer><div><a className="brand" href="#top">{brandLogo?<img className="brand-logo" src={brandLogo} alt="brand logo"/>:<span className="brand-mark">L</span>}<span>L’ÉLITE <b>ATELIER</b><small>نُخبة للتصميم والتنفيذ</small></span></a><p>{t.footer}</p></div><div className="footer-links"><span>Riyadh · Dubai · Doha</span><span>hello@lelite-atelier.com</span><div><span>ig</span><span>in</span></div></div></footer>{toast&&<div className="toast"><Sparkles size={16}/>{toast}</div>}{admin&&<Admin onClose={()=>setAdmin(false)} lang={lang} notify={notify} projects={projects} setProjects={setProjects} materials={materialList} setMaterials={setMaterialList} logo={brandLogo} setLogo={setBrandLogo} about={about} setAbout={setAbout}/>}</div>}
-function Service({icon,title,text}){return <div className="service-card"><span className="service-icon">{icon}</span><h3>{title}</h3><p>{text}</p><button>↗</button></div>}
-function Stat({value,label}){return <div className="stat"><strong>{value}</strong><span>{label}</span></div>}
-function Admin({onClose,lang,notify,projects,setProjects,materials,setMaterials,logo,setLogo,about,setAbout}){const ar=lang==='ar';const [logged,setLogged]=useState(false),[tab,setTab]=useState('brand');const editAbout=(key,value)=>setAbout({...about,[key]:value});return <div className="modal-backdrop"><div className="admin-modal"><button className="close-modal" onClick={onClose}><X/></button>{!logged?<><p className="kicker"><span/> SECURE ACCESS</p><h2>{ar?'دخول لوحة الإدارة':'Admin access'}</h2><p className="muted">{ar?'تتم المصادقة من خلال Cloudflare Pages Functions وملفات تعريف HttpOnly.':'Authentication is handled by Cloudflare Pages Functions with HttpOnly cookies.'}</p><input placeholder={ar?'البريد أو اسم المستخدم':'Email or username'}/><input placeholder={ar?'كلمة المرور':'Password'} type="password"/><button className="gold-btn full" onClick={()=>setLogged(true)}>{ar?'تسجيل الدخول':'Sign in'} <ArrowUpRight size={16}/></button><small className="demo-note">{ar?'وضع العرض: اضغط للدخول واستكشاف لوحة التخصيص.':'Demo mode: enter to explore the whitelabel controls.'}</small></>:<><p className="kicker"><span/> WHITELABEL CONTROL</p><h2>{ar?'مساحة التخصيص':'Brand controls'}</h2><div className="admin-tabs"><button className={tab==='brand'?'active':''} onClick={()=>setTab('brand')}>{ar?'العلامة':'Brand'}</button><button className={tab==='portfolio'?'active':''} onClick={()=>setTab('portfolio')}>{ar?'المشاريع والخامات':'Portfolio & materials'}</button><button className={tab==='about'?'active':''} onClick={()=>setTab('about')}>{ar?'عن الاستوديو والإرث':'About & heritage'}</button></div>{tab==='brand'&&<div className="admin-fields"><label>{ar?'شعار العلامة':'Brand logo'}<Dropzone value={logo} onChange={setLogo} label={ar?'ارفع الشعار':'Upload logo'} ar={ar}/></label><label>{ar?'اسم العلامة':'Brand name'}<input defaultValue="L’ÉLITE Atelier"/></label><label>{ar?'رقم واتساب':'WhatsApp number'}<input defaultValue="+966 50 000 0000"/></label><label>{ar?'وصف مختصر':'Short description'}<input defaultValue={ar?'تصميم وتنفيذ معماري فاخر':'Luxury architecture & interiors'}/></label></div>}{tab==='portfolio'&&<div className="admin-scroll"><h4>{ar?'صور المشاريع':'Project images'}</h4>{projects.map((p,i)=><div className="admin-image-row" key={p.number}><span>{ar?p.title:p.en}</span><Dropzone value={p.image} onChange={img=>setProjects(projects.map((x,j)=>j===i?{...x,image:img}:x))} label={ar?'استبدال الصورة':'Replace image'} ar={ar}/></div>)}<h4>{ar?'صور الخامات':'Material images'}</h4>{materials.map((m,i)=><div className="admin-image-row" key={m.name}><span>{ar?m.name:m.en}</span><Dropzone value={m.image} onChange={img=>setMaterials(materials.map((x,j)=>j===i?{...x,image:img}:x))} label={ar?'استبدال الصورة':'Replace image'} ar={ar}/></div>)}</div>}{tab==='about'&&<div className="admin-fields"><label>{ar?'قصة التأسيس':'Founding story'}<textarea value={ar?about.storyAr:about.storyEn} onChange={e=>editAbout(ar?'storyAr':'storyEn',e.target.value)}/></label><div className="admin-grid"><label>{ar?'سنة التأسيس':'Founding year'}<input value={about.foundingYear} onChange={e=>editAbout('foundingYear',e.target.value)}/></label><label>{ar?'المشاريع المنجزة':'Completed projects'}<input value={about.projects} onChange={e=>editAbout('projects',e.target.value)}/></label><label>{ar?'الخبرة المجمعة':'Combined experience'}<input value={about.experience} onChange={e=>editAbout('experience',e.target.value)}/></label><label>{ar?'التسليم في الموعد':'On-time delivery'}<input value={about.delivery} onChange={e=>editAbout('delivery',e.target.value)}/></label></div><label>{ar?'الفلسفة المعمارية':'Architectural ethos'}<textarea value={ar?about.ethosAr:about.ethosEn} onChange={e=>editAbout(ar?'ethosAr':'ethosEn',e.target.value)}/></label><label>{ar?'السيرة والتوقيع':'Lead architect bio / signature'}<input value={ar?about.architectAr:about.architectEn} onChange={e=>editAbout(ar?'architectAr':'architectEn',e.target.value)}/></label></div>}<button className="gold-btn full" onClick={()=>{notify(ar?'تم حفظ التعديلات بنجاح (وضع العرض)':'Changes saved successfully (demo mode)');onClose()}}>{ar?'حفظ التعديلات':'Save changes'} <ArrowUpRight size={16}/></button></>}</div></div>}
-createRoot(document.getElementById('root')).render(<App/>);
+  return [data, updateData];
+}
+
+// شعار الشركة الهندسي الفاخر VANGUARD ATELIER (SVG عالي النقاء)
+const BrandLogo = ({ className = "h-14 w-auto" }) => (
+  <svg viewBox="0 0 320 90" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#DFBA73" />
+        <stop offset="50%" stopColor="#C5A059" />
+        <stop offset="100%" stopColor="#9E7831" />
+      </linearGradient>
+    </defs>
+    {/* رمز الحرف المعماري V */}
+    <g transform="translate(15, 10)">
+      <polygon points="10,5 35,68 45,68 20,5" fill="url(#goldGrad)" />
+      <polygon points="65,5 40,68 30,68 55,5" fill="url(#goldGrad)" />
+      <rect x="36" y="12" width="3" height="42" fill="url(#goldGrad)" opacity="0.6" />
+      <rect x="26" y="24" width="23" height="2" fill="url(#goldGrad)" opacity="0.8" />
+    </g>
+    {/* اسم العلامة التجارية */}
+    <text x="95" y="44" fontFamily="'Cinzel', 'Playfair Display', serif" fontSize="26" fontWeight="700" letterSpacing="4" fill="url(#goldGrad)">
+      VANGUARD
+    </text>
+    <text x="96" y="66" fontFamily="'Montserrat', sans-serif" fontSize="11" fontWeight="500" letterSpacing="6" fill="#D4AF37">
+      ATELIER ARCHITECTURE
+    </text>
+  </svg>
+);
+
+function App() {
+  const [data, updateData] = useSiteData();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("الكل");
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminAuth, setAdminAuth] = useState(false);
+  const [adminPass, setAdminPass] = useState("");
+  const [tempData, setTempData] = useState(data);
+
+  // تحديث السلايدر تلقائياً
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % data.heroSlides.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [data.heroSlides.length]);
+
+  const filteredProjects = selectedCategory === "الكل" 
+    ? data.projects 
+    : data.projects.filter(p => p.category === selectedCategory);
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminPass === "1234" || adminPass === "admin2026") {
+      setAdminAuth(true);
+      setTempData(data);
+    } else {
+      alert("كلمة المرور غير صحيحة");
+    }
+  };
+
+  const handleSaveData = () => {
+    updateData(tempData);
+    alert("تم حفظ وتحديث جميع البيانات بنجاح!");
+    setShowAdmin(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0e0e0e] text-white selection:bg-[#c5a059] selection:text-black">
+      
+      {/* 1. الشريط العلوي الفاخر */}
+      <header className="sticky top-0 z-40 bg-[#0e0e0e]/90 backdrop-blur-md border-b border-[#262626] px-4 md:px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <BrandLogo className="h-10 md:h-12 w-auto" />
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <a 
+            href={`tel:${data.brand.phone}`}
+            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold tracking-wider uppercase border border-[#c5a059]/40 hover:border-[#c5a059] text-[#c5a059] transition-all rounded-full"
+          >
+            <Phone size={14} />
+            <span>اتصل بنا</span>
+          </a>
+          <button 
+            onClick={() => setShowAdmin(true)} 
+            className="p-2.5 rounded-full bg-[#1a1a1a] hover:bg-[#252525] border border-white/10 text-neutral-300 hover:text-[#c5a059] transition-colors"
+            title="لوحة التحكم"
+          >
+            <Settings size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* 2. السلايدر السينمائي العريض (Fade & Zoom Reveal) */}
+      <section className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden bg-black">
+        {data.heroSlides.map((slide, index) => (
+          <div 
+            key={slide.id}
+            className={`absolute inset-0 transition-all duration-1000 ease-out ${
+              index === currentSlide ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+            }`}
+          >
+            <img 
+              src={slide.image} 
+              alt={slide.title} 
+              className="w-full h-full object-cover object-center filter brightness-[0.7]"
+            />
+            {/* تدرج الظل الاحترافي */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-transparent to-black/40" />
+
+            <div className="absolute bottom-16 md:bottom-24 inset-x-0 px-6 md:px-16 text-center max-w-4xl mx-auto">
+              <span className="inline-block py-1 px-3 mb-3 text-xs tracking-widest text-[#c5a059] uppercase bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-full">
+                {data.brand.name}
+              </span>
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
+                {slide.title}
+              </h1>
+              <p className="text-sm md:text-lg text-neutral-300 max-w-2xl mx-auto mb-6">
+                {slide.subtitle}
+              </p>
+              <a
+                href={`https://wa.me/${data.brand.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-[#DFBA73] to-[#9E7831] text-black font-bold text-sm tracking-wide rounded-full hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] transition-all"
+              >
+                <MessageCircle size={18} />
+                تواصل عبر واتساب
+              </a>
+            </div>
+          </div>
+        ))}
+
+        {/* نقاط التحكم في السلايدر */}
+        <div className="absolute bottom-6 inset-x-0 flex justify-center items-center gap-2 z-20">
+          {data.heroSlides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1.5 transition-all duration-300 rounded-full ${
+                i === currentSlide ? "w-8 bg-[#c5a059]" : "w-2 bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* 3. شريط الإحصائيات والأرقام التفاعلية */}
+      <section className="py-10 bg-[#141414] border-y border-[#262626]">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl md:text-4xl font-extrabold text-[#c5a059] font-mono">
+              {data.brand.yearsExperience}
+            </div>
+            <div className="text-xs md:text-sm text-neutral-400 mt-1">سنوات من الخبرة</div>
+          </div>
+          <div>
+            <div className="text-2xl md:text-4xl font-extrabold text-[#c5a059] font-mono">
+              {data.brand.completedProjects}
+            </div>
+            <div className="text-xs md:text-sm text-neutral-400 mt-1">مشروع تم تسليمه</div>
+          </div>
+          <div>
+            <div className="text-2xl md:text-4xl font-extrabold text-[#c5a059] font-mono">
+              {data.brand.satisfiedClients}
+            </div>
+            <div className="text-xs md:text-sm text-neutral-400 mt-1">عميل يثق بنا</div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. نبذة عن الشركة (About) */}
+      <section className="py-16 md:py-24 px-6 max-w-5xl mx-auto text-center">
+        <span className="text-xs uppercase tracking-[0.2em] text-[#c5a059] font-semibold">من نحن</span>
+        <h2 className="text-2xl md:text-4xl font-bold mt-2 mb-6">رؤية تتجاوز المألوف في التصميم والتنفيذ</h2>
+        <p className="text-neutral-400 text-sm md:text-base leading-relaxed max-w-3xl mx-auto">
+          {data.brand.aboutText}
+        </p>
+      </section>
+
+      {/* 5. قسم 3D vs Reality (المقارنة الواقعية) */}
+      <section className="py-16 bg-[#121212] border-y border-[#262626]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <span className="text-xs uppercase tracking-widest text-[#c5a059]">المصداقية الهندسية</span>
+            <h2 className="text-2xl md:text-3xl font-bold mt-1 text-white">{data.comparison.title}</h2>
+            <p className="text-xs md:text-sm text-neutral-400 mt-2 max-w-xl mx-auto">{data.comparison.description}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 items-center">
+            {/* 3D Render */}
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
+              <img 
+                src={data.comparison.renderImage} 
+                alt="3D Design" 
+                className="w-full h-72 md:h-96 object-cover transform group-hover:scale-105 transition-all duration-700"
+              />
+              <span className="absolute top-4 right-4 bg-black/70 backdrop-blur-md border border-[#c5a059]/40 text-[#c5a059] px-3 py-1 rounded-full text-xs font-bold">
+                تصميم 3D مقترح
+              </span>
+            </div>
+
+            {/* Real Execution */}
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
+              <img 
+                src={data.comparison.realImage} 
+                alt="Real Execution" 
+                className="w-full h-72 md:h-96 object-cover transform group-hover:scale-105 transition-all duration-700"
+              />
+              <span className="absolute top-4 right-4 bg-[#c5a059] text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                الواقع بعد التنفيذ
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. المشاريع وأزرار الفلترة (Filter Pills) */}
+      <section className="py-16 md:py-24 px-6 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest text-[#c5a059]">معرض الأعمال</span>
+            <h2 className="text-2xl md:text-3xl font-bold mt-1">مشاريع صُنعت بفخامة</h2>
+          </div>
+
+          {/* أزرار الفلترة المستديرة مثل Clear Vision */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {data.categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  selectedCategory === cat 
+                    ? "bg-[#c5a059] text-black" 
+                    : "bg-[#1c1c1c] text-neutral-400 hover:text-white border border-white/5"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* شبكة المشاريع */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {filteredProjects.map((project) => (
+            <div 
+              key={project.id}
+              className="bg-[#171717] rounded-xl overflow-hidden border border-white/5 hover:border-[#c5a059]/40 transition-all duration-300 group"
+            >
+              <div className="relative h-60 overflow-hidden">
+                <img 
+                  src={project.image} 
+                  alt={project.title} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                />
+                <span className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-[10px] font-bold text-neutral-300 px-2.5 py-1 rounded-full border border-white/10">
+                  {project.category}
+                </span>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-sm text-white group-hover:text-[#c5a059] transition-colors">
+                  {project.title}
+                </h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 7. شريط الشركاء والخامات (Brands Marquee) */}
+      <section className="py-12 bg-[#121212] border-t border-[#262626] overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 text-center mb-6">
+          <span className="text-xs uppercase tracking-widest text-neutral-500">شركاء النجاح والخامات المعتمدة</span>
+        </div>
+        <div className="flex justify-center flex-wrap gap-6 md:gap-12 px-6 opacity-70">
+          {data.partners.map((partner, index) => (
+            <div key={index} className="text-sm md:text-base font-semibold text-neutral-400 hover:text-[#c5a059] transition-colors">
+              • {partner}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 8. تذييل الصفحة الفاخر (Footer) */}
+      <footer className="bg-[#0a0a0a] border-t border-[#262626] pt-12 pb-24 px-6 text-center">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <BrandLogo className="h-12 w-auto mb-4" />
+          <p className="text-xs text-neutral-500 max-w-md mb-6">{data.brand.tagline}</p>
+          <div className="text-xs text-neutral-500 space-y-1">
+            <p>{data.brand.address}</p>
+            <p>{data.brand.phone} | {data.brand.email}</p>
+          </div>
+          <p className="text-[11px] text-neutral-600 mt-8">© 2026 {data.brand.name}. جميع الحقوق محفوظة.</p>
+        </div>
+      </footer>
+
+      {/* 9. الأزرار العائمة الدائمة (Floating CTAs) */}
+      <div className="fixed bottom-6 left-6 z-40 flex flex-col gap-3">
+        <a 
+          href={`https://wa.me/${data.brand.whatsapp}`} 
+          target="_blank" 
+          rel="noreferrer"
+          className="w-13 h-13 p-3.5 bg-[#25D366] text-white rounded-full shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:scale-110 transition-all flex items-center justify-center"
+          title="واتساب مباشر"
+        >
+          <MessageCircle size={24} />
+        </a>
+        <a 
+          href={`tel:${data.brand.phone}`} 
+          className="w-13 h-13 p-3.5 bg-gradient-to-r from-[#DFBA73] to-[#9E7831] text-black rounded-full shadow-[0_4px_20px_rgba(212,175,55,0.4)] hover:scale-110 transition-all flex items-center justify-center"
+          title="اتصال هاتفي"
+        >
+          <Phone size={22} />
+        </a>
+      </div>
+
+      {/* 10. شاشة لوحة التحكم المنفصلة (Admin Panel Modal) */}
+      {showAdmin && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#161616] border border-[#333] w-full max-w-2xl max-h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+            
+            {/* هيدر اللوحة */}
+            <div className="p-4 border-b border-[#262626] flex items-center justify-between bg-[#1b1b1b]">
+              <div className="flex items-center gap-2">
+                <Settings className="text-[#c5a059]" size={20} />
+                <h3 className="font-bold text-sm text-white">لوحة تحكم الموقع (Dashboard)</h3>
+              </div>
+              <button 
+                onClick={() => setShowAdmin(false)} 
+                className="p-1 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* محتوى اللوحة */}
+            <div className="p-6 overflow-y-auto space-y-6 text-right">
+              {!adminAuth ? (
+                // شاشة التحقق السرية
+                <form onSubmit={handleAdminLogin} className="space-y-4 py-8 max-w-sm mx-auto text-center">
+                  <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mx-auto text-[#c5a059]">
+                    <Lock size={24} />
+                  </div>
+                  <h4 className="font-bold text-base">تسجيل دخول الإدارة</h4>
+                  <p className="text-xs text-neutral-400">أدخل كلمة المرور لتعديل نصوص وصور الموقع (الافتراضي: 1234)</p>
+                  <input 
+                    type="password" 
+                    value={adminPass} 
+                    onChange={(e) => setAdminPass(e.target.value)} 
+                    placeholder="كلمة المرور"
+                    className="w-full bg-[#202020] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-center text-white focus:outline-none focus:border-[#c5a059]"
+                  />
+                  <button 
+                    type="submit" 
+                    className="w-full py-2.5 bg-[#c5a059] hover:bg-[#d8b368] text-black font-bold text-xs uppercase tracking-wider rounded-lg transition-colors"
+                  >
+                    دخول
+                  </button>
+                </form>
+              ) : (
+                // شاشة التعديل الكامل للعميل
+                <div className="space-y-6">
+                  {/* بيانات الاتصال والبراند */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-[#c5a059] uppercase tracking-wider">بيانات الشركة والتواصل</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-neutral-400 mb-1">اسم العلامة</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.name} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, name: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">الهاتف</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.phone} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, phone: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-left" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">رقم واتساب (بدون +)</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.whatsapp} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, whatsapp: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-left" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">العنوان</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.address} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, address: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* نصوص الإحصائيات */}
+                  <div className="space-y-3 border-t border-[#262626] pt-4">
+                    <h4 className="text-xs font-bold text-[#c5a059] uppercase tracking-wider">الأرقام والإحصائيات</h4>
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block text-neutral-400 mb-1">سنوات الخبرة</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.yearsExperience} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, yearsExperience: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-center" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">المشاريع</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.completedProjects} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, completedProjects: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-center" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">العملاء</label>
+                        <input 
+                          type="text" 
+                          value={tempData.brand.satisfiedClients} 
+                          onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, satisfiedClients: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-center" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* نبذة عن الشركة */}
+                  <div className="space-y-2 border-t border-[#262626] pt-4">
+                    <label className="block text-xs font-bold text-[#c5a059]">نص "من نحن"</label>
+                    <textarea 
+                      rows={3} 
+                      value={tempData.brand.aboutText} 
+                      onChange={(e) => setTempData({...tempData, brand: {...tempData.brand, aboutText: e.target.value}})}
+                      className="w-full bg-[#222] border border-white/10 rounded p-2 text-xs text-white"
+                    />
+                  </div>
+
+                  {/* صور 3D vs Reality */}
+                  <div className="space-y-3 border-t border-[#262626] pt-4">
+                    <h4 className="text-xs font-bold text-[#c5a059] uppercase tracking-wider">روابط صور 3D vs الواقع</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-neutral-400 mb-1">رابط صورة 3D</label>
+                        <input 
+                          type="text" 
+                          value={tempData.comparison.renderImage} 
+                          onChange={(e) => setTempData({...tempData, comparison: {...tempData.comparison, renderImage: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-left font-mono text-[10px]" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-neutral-400 mb-1">رابط صورة الواقع</label>
+                        <input 
+                          type="text" 
+                          value={tempData.comparison.realImage} 
+                          onChange={(e) => setTempData({...tempData, comparison: {...tempData.comparison, realImage: e.target.value}})}
+                          className="w-full bg-[#222] border border-white/10 rounded p-2 text-white text-left font-mono text-[10px]" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+
+            {/* أزرار الحفظ بالأسفل */}
+            {adminAuth && (
+              <div className="p-4 border-t border-[#262626] bg-[#1a1a1a] flex items-center justify-between">
+                <button 
+                  onClick={() => setShowAdmin(false)} 
+                  className="px-4 py-2 text-xs text-neutral-400 hover:text-white"
+                >
+                  إلغاء
+                </button>
+                <button 
+                  onClick={handleSaveData} 
+                  className="inline-flex items-center gap-2 px-6 py-2 bg-[#c5a059] hover:bg-[#d8b368] text-black font-bold text-xs rounded-lg transition-all shadow-md"
+                >
+                  <Check size={16} />
+                  حفظ التعديلات فوراً
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
